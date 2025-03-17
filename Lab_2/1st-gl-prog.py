@@ -1,7 +1,7 @@
 from OpenGL.GL import *
 from glfw.GLFW import *
 
-def key_callback(window, key, scancode, action, mods):
+def key_callback(window, key, scancode, action, mods): #used to handle keyboard inout, especially to close the window when esc key is pressed
     if key==GLFW_KEY_ESCAPE and action==GLFW_PRESS:
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 
