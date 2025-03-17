@@ -11,10 +11,10 @@ layout (location = 0) in vec3 vin_pos;
 void main()
 {
     // gl_Position: built-in output variable of type vec4 to which vertex position in clip space is assigned.
-    //gl_Position = vec4(vin_pos.x, vin_pos.y, -vin_pos.z, 1.0);
+    gl_Position = vec4(vin_pos.x, vin_pos.y, -vin_pos.z, 1.0);
 
-    //gl_Position.xyz = vin_pos;
-    //gl_Position.w = 1.0;
+    gl_Position.xyz = vin_pos;
+    gl_Position.w = 1.0;
 }
 '''
 
@@ -27,7 +27,7 @@ out vec4 FragColor;
 void main()
 {
     // set the fragment color to white.
-    FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f); // colour changed to red
 }
 '''
 
@@ -103,11 +103,13 @@ def main():
 
     # prepare vertex data (in main memory)
     vertices = glm.array(glm.float32,
-
-        -0.5, 0.5, 0.0, # left vertex x, y, z coordinates
-        -0.5, -0.5, 0.0, # right vertex x, y, z coordinates
-         0.5,  -0.5, 0.0, # bottom vertex x, y, z coordinates
-         0.5,  0.5, 0.0  # top vertex x, y, z coordinates
+        -0.5,  0.5, 0.0, # top-left vertex x, y, z coordinates
+        -0.5, -0.5, 0.0, # bottom-left vertex x, y, z coordinates
+         0.5, -0.5, 0.0,  #bottom-right x, y, z coordinates
+         
+        -0.5,  0.5, 0.0, #top-left x, y, z coordinates
+         0.5, -0.5, 0.0, #bottom-right x, y, z coordinates
+         0.5,  0.5, 0.0  #top-right x, y, z coordinates
          )
 
     # create and activate VAO (vertex array object)
@@ -122,7 +124,7 @@ def main():
     glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW) # allocate GPU memory for and copy vertex data to the currently bound vertex buffer
 
     # configure vertex attributes
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * glm.sizeof(glm.float32), None)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * glm.sizeof(glm.float32), None)
     glEnableVertexAttribArray(0)
 
     # loop until the user closes the window
@@ -132,7 +134,7 @@ def main():
 
         glUseProgram(shader_program)
         glBindVertexArray(VAO)
-        glDrawArrays(GL_TRIANGLES, 0, 4) #changed
+        glDrawArrays(GL_TRIANGLES, 0, 6) #changed to 6 for 6 vertices to form a rectangle (2 triangles form a rectangle)
 
         # swap front and back buffers
         glfwSwapBuffers(window)
