@@ -11,9 +11,13 @@ layout (location = 1) in vec3 vin_color;
 
 out vec4 vout_color;
 
+uniform float offset; // uniform variable(new)
+
 void main()
 {
-    gl_Position = vec4(vin_pos.x, vin_pos.y, vin_pos.z, 1.0);
+    vec3 pos = vin_pos;
+    pos.x += offset;  // Apply the offset to the x-coordinate
+    gl_Position = vec4(pos, 1.0);
     vout_color = vec4(vin_color,1); // you can pass a vec3 and a scalar to vec4 constructor
 }
 '''
@@ -24,10 +28,12 @@ g_fragment_shader_src = '''
 in vec4 vout_color;
 
 out vec4 FragColor;
+uniform float fade; // uniform variable(new)
 
 void main()
 {
-    FragColor = vout_color;
+    FragColor = vout_color * fade;
+
 }
 '''
 
@@ -89,7 +95,7 @@ def main():
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE) # for macOS
 
     # create a window and OpenGL context
-    window = glfwCreateWindow(800, 800, '2-interpolated-triangle', None, None)
+    window = glfwCreateWindow(800, 800, '2022055741', None, None)
     if not window:
         glfwTerminate()
         return
@@ -101,12 +107,15 @@ def main():
     # load shaders
     shader_program = load_shaders(g_vertex_shader_src, g_fragment_shader_src)
 
+    #getting uniform locations (new)
+    vin_col_loc = glGetUniformLocation(shader_program, "vin_color") #new
+    
     # prepare vertex data (in main memory)
     vertices = glm.array(glm.float32,
         # position        # color
-        -1.0, -1.0, 0.0,  1.0, 0.0, 0.0, # left vertex
-         1.0, -1.0, 0.0,  0.0, 1.0, 0.0, # right vertex
-         0.0,  1.0, 0.0,  0.0, 0.0, 1.0, # top vertex
+        -0.5, -0.5, 0.0,  1.0, 0.0, 0.0, # left vertex
+         0.5, -0.5, 0.0,  0.0, 1.0, 0.0, # right vertex
+         0.0,  0.5, 0.0,  0.0, 0.0, 1.0, # top vertex
     )
 
     # create and activate VAO (vertex array object)
@@ -128,12 +137,28 @@ def main():
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * glm.sizeof(glm.float32), ctypes.c_void_p(3*glm.sizeof(glm.float32)))
     glEnableVertexAttribArray(1)
 
+    offset_loc= glGetUniformLocation(shader_program, "offset") #new
+    fade_loc = glGetUniformLocation(shader_program, "fade") #new
+
+
+
     # loop until the user closes the window
     while not glfwWindowShouldClose(window):
         # render
         glClear(GL_COLOR_BUFFER_BIT)
 
         glUseProgram(shader_program)
+
+        #updating uniforms (new)
+        t = glfwGetTime()
+        offset = (glm.sin(t) + 0.2) * .5
+        fade = (glm.sin(t) + 1) * 0.5
+
+        glUniform1f(offset_loc, offset)
+        glUniform1f(fade_loc, fade)
+
+        
+
         glBindVertexArray(VAO)
         glDrawArrays(GL_TRIANGLES, 0, 3)
 
