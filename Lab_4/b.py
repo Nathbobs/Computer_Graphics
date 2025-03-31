@@ -124,7 +124,7 @@ def main():
         # 2x2 identity matrix 
         # M = np.array([[1., 0.],
                       # [0., 1.]])   # or
-        M = np.identity(2)
+        M = np.identity(2) # The commented sections can be used to create a 2x2 identity matrix(play around with it).
 
         # # uniform scaling
         # M = np.array([[2., 0.],
