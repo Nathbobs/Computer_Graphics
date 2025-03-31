@@ -164,9 +164,12 @@ def main():
         T = np.array([[1., 0., np.sin(t)],
                       [0., 1., .2],
                       [0., 0., 1.]])
+        
+        ## - You can unedit this place to see the different transformations - ##
 
-        M = R
-        # M = T
+
+        #M = R
+        M = T
         # M = R @ T   # '@' is matrix-matrix / matrix-vector multiplication operator
         # M = T @ R
 
