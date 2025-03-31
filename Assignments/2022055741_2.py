@@ -1,39 +1,33 @@
 from OpenGL.GL import *
 from glfw.GLFW import *
 import glm
-import ctypes
 
 g_vertex_shader_src = '''
 #version 330 core
 
+// input vertex position. its attribute index is 0.
 layout (location = 0) in vec3 vin_pos; 
-layout (location = 1) in vec3 vin_color; 
-
-out vec4 vout_color;
-
-uniform float offset; // uniform variable(new)
 
 void main()
 {
-    vec3 pos = vin_pos;
-    pos.x += offset;  // Apply the offset to the x-coordinate
-    gl_Position = vec4(pos, 1.0);
-    vout_color = vec4(vin_color,1); // you can pass a vec3 and a scalar to vec4 constructor
+    // gl_Position: built-in output variable of type vec4 to which vertex position in clip space is assigned.
+    gl_Position = vec4(vin_pos.x, vin_pos.y, -vin_pos.z, 1.0);
+
+    gl_Position.xyz = vin_pos;
+    gl_Position.w = 1.0;
 }
 '''
 
 g_fragment_shader_src = '''
 #version 330 core
 
-in vec4 vout_color;
-
+// output fragment color of type vec4.
 out vec4 FragColor;
-uniform float fade; // uniform variable(new)
 
 void main()
 {
-    FragColor = vout_color * fade;
-
+    // set the fragment color to white.
+    FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f); // colour changed to red
 }
 '''
 
@@ -107,16 +101,16 @@ def main():
     # load shaders
     shader_program = load_shaders(g_vertex_shader_src, g_fragment_shader_src)
 
-    #getting uniform locations (new)
-    vin_col_loc = glGetUniformLocation(shader_program, "vin_color") #new
-    
     # prepare vertex data (in main memory)
     vertices = glm.array(glm.float32,
-        # position        # color
-        -0.5, -0.5, 0.0,  1.0, 0.0, 0.0, # left vertex
-         0.5, -0.5, 0.0,  0.0, 1.0, 0.0, # right vertex
-         0.0,  0.5, 0.0,  0.0, 0.0, 1.0, # top vertex
-    )
+        -0.5,  0.5, 0.0, # top-left vertex x, y, z coordinates
+        -0.5, -0.5, 0.0, # bottom-left vertex x, y, z coordinates
+         0.5, -0.5, 0.0,  #bottom-right x, y, z coordinates
+         
+        -0.5,  0.5, 0.0, #top-left x, y, z coordinates
+         0.5, -0.5, 0.0, #bottom-right x, y, z coordinates
+         0.5,  0.5, 0.0  #top-right x, y, z coordinates
+         )
 
     # create and activate VAO (vertex array object)
     VAO = glGenVertexArrays(1)  # create a vertex array object ID and store it to VAO variable
@@ -129,18 +123,9 @@ def main():
     # copy vertex data to VBO
     glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW) # allocate GPU memory for and copy vertex data to the currently bound vertex buffer
 
-    # configure vertex positions
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * glm.sizeof(glm.float32), None)
+    # configure vertex attributes
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * glm.sizeof(glm.float32), None)
     glEnableVertexAttribArray(0)
-
-    # configure vertex colors
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * glm.sizeof(glm.float32), ctypes.c_void_p(3*glm.sizeof(glm.float32)))
-    glEnableVertexAttribArray(1)
-
-    offset_loc= glGetUniformLocation(shader_program, "offset") #new
-    fade_loc = glGetUniformLocation(shader_program, "fade") #new
-
-
 
     # loop until the user closes the window
     while not glfwWindowShouldClose(window):
@@ -148,19 +133,8 @@ def main():
         glClear(GL_COLOR_BUFFER_BIT)
 
         glUseProgram(shader_program)
-
-        #updating uniforms (new)
-        t = glfwGetTime()
-        offset = (glm.sin(t) + 0.2) * .5
-        fade = (glm.sin(t) + 1) * 0.5
-
-        glUniform1f(offset_loc, offset)
-        glUniform1f(fade_loc, fade)
-
-        
-
         glBindVertexArray(VAO)
-        glDrawArrays(GL_TRIANGLES, 0, 3)
+        glDrawArrays(GL_TRIANGLES, 0, 6) #changed to 6 for 6 vertices to form a rectangle (2 triangles form a rectangle)
 
         # swap front and back buffers
         glfwSwapBuffers(window)
