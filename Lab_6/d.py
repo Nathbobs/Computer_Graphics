@@ -100,6 +100,9 @@ def key_callback(window, key, scancode, action, mods):
             elif key==GLFW_KEY_W:
                 g_cam_height += -.1
 
+def framebuffer_size_callback(window, width, height):
+    glViewport(0, 0, width, height)
+
 def prepare_vao_cube():
     # prepare vertex data (in main memory)
     # 36 vertices for 12 triangles
@@ -237,7 +240,7 @@ def main():
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE) # for macOS
 
     # create a window and OpenGL context
-    window = glfwCreateWindow(800, 800, '3-viewport', None, None)
+    window = glfwCreateWindow(800, 800, '4-viewport-fit', None, None)
     if not window:
         glfwTerminate()
         return
@@ -245,6 +248,7 @@ def main():
 
     # register event callbacks
     glfwSetKeyCallback(window, key_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback)
 
     # load shaders
     shader_program = load_shaders(g_vertex_shader_src, g_fragment_shader_src)
@@ -256,8 +260,8 @@ def main():
     vao_cube = prepare_vao_cube()
     vao_frame = prepare_vao_frame()
 
-    # viewport
-    glViewport(100,100, 200,200)
+    # # viewport
+    # glViewport(100,100, 200,200)
 
     # loop until the user closes the window
     while not glfwWindowShouldClose(window):
@@ -272,8 +276,8 @@ def main():
 
         # projection matrix
         # orthogonal projection - try changing arguments
-        P = glm.ortho(-1,1,-1,1,-1,1)
-        #P = glm.ortho(-5,5, -5,5, -10,10)
+        # P = glm.ortho(-1,1,-1,1,-1,1)
+        P = glm.ortho(-5,5, -5,5, -10,10)
 
         # view matrix
         # rotate camera position with g_cam_ang / move camera up & down with g_cam_height
@@ -293,7 +297,7 @@ def main():
         M = glm.mat4()
 
         # # try applying rotation
-        #M = R
+        # M = R
 
         # # draw cube w.r.t. the current frame MVP
         # draw_cube(vao_cube, P*V*M, MVP_loc)

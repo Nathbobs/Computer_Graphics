@@ -295,7 +295,7 @@ def main():
         M = glm.mat4()
 
         # # try applying rotation
-        M = R
+        #M = R
 
         # draw cube w.r.t. the current frame MVP
         #draw_cube(vao_cube, P*V*M, MVP_loc)
