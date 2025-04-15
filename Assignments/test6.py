@@ -275,9 +275,9 @@ def main():
     # glViewport(100,100, 200,200)
 
     # initialize projection matrix
-    ortho_height = 10.
-    ortho_width = ortho_height * 800/800    # initial width/height
-    g_P = glm.ortho(-ortho_width*.5,ortho_width*.5, -ortho_height*.5,ortho_height*.5, -10,10)
+    # ortho_height = 10.
+    # ortho_width = ortho_height * 800/800    # initial width/height
+    # g_P = glm.ortho(-ortho_width*.5,ortho_width*.5, -ortho_height*.5,ortho_height*.5, -10,10)
     g_P = glm.perspective(20, 1, .1, 10)
     # loop until the user closes the window
     while not glfwWindowShouldClose(window):
@@ -292,7 +292,7 @@ def main():
 
         # view matrix
         # rotate camera position with g_cam_ang / move camera up & down with g_cam_height
-        V = glm.lookAt(glm.vec3(1*np.sin(g_cam_ang),g_cam_height,1*np.cos(g_cam_ang)), glm.vec3(0,0,0), glm.vec3(0,1,0))
+        V = glm.lookAt(glm.vec3(5*np.sin(g_cam_ang),g_cam_height,5*np.cos(g_cam_ang)), glm.vec3(0,0,0), glm.vec3(0,1,0))
 
         # draw world frame
         draw_frame(vao_frame, g_P*V*glm.mat4(), MVP_loc)
