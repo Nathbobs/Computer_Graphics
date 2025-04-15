@@ -7,6 +7,9 @@ import numpy as np
 g_cam_ang = 0.
 g_cam_height = .1
 
+# now projection matrix P is a global variable so that it can be accessed from main() and framebuffer_size_callback()
+g_P = glm.mat4()
+
 g_vertex_shader_src = '''
 #version 330 core
 
@@ -101,7 +104,13 @@ def key_callback(window, key, scancode, action, mods):
                 g_cam_height += -.1
 
 def framebuffer_size_callback(window, width, height):
+    global g_P
+
     glViewport(0, 0, width, height)
+
+    #ortho_height = 10.
+    #ortho_width = ortho_height * width/height
+    g_P = glm.perspective(20, width/height, .1, 10)
 
 def prepare_vao_cube():
     # prepare vertex data (in main memory)
@@ -231,6 +240,8 @@ def draw_cube_array(vao, MVP, MVP_loc):
                 glDrawArrays(GL_TRIANGLES, 0, 36)
 
 def main():
+    global g_P
+
     # initialize glfw
     if not glfwInit():
         return
@@ -240,7 +251,7 @@ def main():
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE) # for macOS
 
     # create a window and OpenGL context
-    window = glfwCreateWindow(800, 800, '4-viewport-fit', None, None)
+    window = glfwCreateWindow(800, 800, '2019008813', None, None)
     if not window:
         glfwTerminate()
         return
@@ -261,8 +272,13 @@ def main():
     vao_frame = prepare_vao_frame()
 
     # # viewport
-    glViewport(100,100, 200,200)
+    # glViewport(100,100, 200,200)
 
+    # initialize projection matrix
+    ortho_height = 10.
+    ortho_width = ortho_height * 800/800    # initial width/height
+    g_P = glm.ortho(-ortho_width*.5,ortho_width*.5, -ortho_height*.5,ortho_height*.5, -10,10)
+    g_P = glm.perspective(20, 1, .1, 10)
     # loop until the user closes the window
     while not glfwWindowShouldClose(window):
         # enable depth test (we'll see details later)
@@ -274,17 +290,12 @@ def main():
 
         glUseProgram(shader_program)
 
-        # projection matrix
-        # orthogonal projection - try changing arguments
-        # P = glm.ortho(-1,1,-1,1,-1,1)
-        P = glm.ortho(-5,5, -5,5, -10,10)
-
         # view matrix
         # rotate camera position with g_cam_ang / move camera up & down with g_cam_height
         V = glm.lookAt(glm.vec3(1*np.sin(g_cam_ang),g_cam_height,1*np.cos(g_cam_ang)), glm.vec3(0,0,0), glm.vec3(0,1,0))
 
         # draw world frame
-        draw_frame(vao_frame, P*V*glm.mat4(), MVP_loc)
+        draw_frame(vao_frame, g_P*V*glm.mat4(), MVP_loc)
 
 
         # animating
@@ -300,10 +311,10 @@ def main():
         # M = R
 
         # # draw cube w.r.t. the current frame MVP
-        # draw_cube(vao_cube, P*V*M, MVP_loc)
+        # draw_cube(vao_cube, g_P*V*M, MVP_loc)
 
         # draw cube array w.r.t. the current frame MVP
-        draw_cube_array(vao_cube, P*V*M, MVP_loc)
+        draw_cube_array(vao_cube, g_P*V*M, MVP_loc)
 
 
         # swap front and back buffers
