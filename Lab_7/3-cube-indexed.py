@@ -7,7 +7,7 @@ import numpy as np
 g_cam_ang = 0.
 g_cam_height = .1
 
-g_vertex_shader_src_color_attribute = '''
+g_vertex_shader_src = '''
 #version 330 core
 
 layout (location = 0) in vec3 vin_pos; 
@@ -28,28 +28,6 @@ void main()
 }
 '''
 
-g_vertex_shader_src_color_uniform = '''
-#version 330 core
-
-layout (location = 0) in vec3 vin_pos; 
-
-out vec4 vout_color;
-
-uniform mat4 MVP;
-uniform vec3 color;
-
-void main()
-{
-    // 3D points in homogeneous coordinates
-    vec4 p3D_in_hcoord = vec4(vin_pos.xyz, 1.0);
-
-    gl_Position = MVP * p3D_in_hcoord;
-
-    vout_color = vec4(color, 1.);
-    //vout_color = vec4(1,1,1,1);
-}
-'''
-
 g_fragment_shader_src = '''
 #version 330 core
 
@@ -62,42 +40,6 @@ void main()
     FragColor = vout_color;
 }
 '''
-
-class Node:
-    def __init__(self, parent, shape_transform, color):
-        # hierarchy
-        self.parent = parent
-        self.children = []
-        if parent is not None:
-            parent.children.append(self)
-
-        # transform
-        self.transform = glm.mat4()
-        self.global_transform = glm.mat4()
-
-        # shape
-        self.shape_transform = shape_transform
-        self.color = color
-
-    def set_transform(self, transform):
-        self.transform = transform
-
-    def update_tree_global_transform(self):
-        if self.parent is not None:
-            self.global_transform = self.parent.get_global_transform() * self.transform
-        else:
-            self.global_transform = self.transform
-
-        for child in self.children:
-            child.update_tree_global_transform()
-
-    def get_global_transform(self):
-        return self.global_transform
-    def get_shape_transform(self):
-        return self.shape_transform
-    def get_color(self):
-        return self.color
-
 
 def load_shaders(vertex_shader_source, fragment_shader_source):
     # build and compile our shader program
@@ -158,18 +100,36 @@ def key_callback(window, key, scancode, action, mods):
             elif key==GLFW_KEY_W:
                 g_cam_height += -.1
 
-def prepare_vao_box():
+def prepare_vao_cube():
     # prepare vertex data (in main memory)
-    # 6 vertices for 2 triangles
+    # 8 vertices
     vertices = glm.array(glm.float32,
-        # position         
-        -1 ,  1 ,  0 , # v0
-         1 , -1 ,  0 , # v2
-         1 ,  1 ,  0 , # v1
+        # position      color
+        -1 ,  1 ,  1 ,  1, 1, 1, # v0
+         1 ,  1 ,  1 ,  1, 1, 1, # v1
+         1 , -1 ,  1 ,  1, 1, 1, # v2
+        -1 , -1 ,  1 ,  1, 1, 1, # v3
+        -1 ,  1 , -1 ,  1, 1, 1, # v4
+         1 ,  1 , -1 ,  1, 1, 1, # v5
+         1 , -1 , -1 ,  1, 1, 1, # v6
+        -1 , -1 , -1 ,  1, 1, 1, # v7
+    )
 
-        -1 ,  1 ,  0 , # v0
-        -1 , -1 ,  0 , # v3
-         1 , -1 ,  0 , # v2
+    # prepare index data
+    # 12 triangles
+    indices = glm.array(glm.uint32,
+        0,2,1,
+        0,3,2,
+        4,5,6,
+        4,6,7,
+        0,1,5,
+        0,5,4,
+        3,6,2,
+        3,7,6,
+        1,2,6,
+        1,6,5,
+        0,7,3,
+        0,4,7,
     )
 
     # create and activate VAO (vertex array object)
@@ -180,25 +140,36 @@ def prepare_vao_box():
     VBO = glGenBuffers(1)   # create a buffer object ID and store it to VBO variable
     glBindBuffer(GL_ARRAY_BUFFER, VBO)  # activate VBO as a vertex buffer object
 
+    # create and activate EBO (element buffer object)
+    EBO = glGenBuffers(1)   # create a buffer object ID and store it to EBO variable
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO)  # activate EBO as an element buffer object
+
     # copy vertex data to VBO
     glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices.ptr, GL_STATIC_DRAW) # allocate GPU memory for and copy vertex data to the currently bound vertex buffer
 
+    # copy index data to EBO
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.nbytes, indices.ptr, GL_STATIC_DRAW) # allocate GPU memory for and copy index data to the currently bound element buffer
+
     # configure vertex positions
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * glm.sizeof(glm.float32), None)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * glm.sizeof(glm.float32), None)
     glEnableVertexAttribArray(0)
+
+    # configure vertex colors
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * glm.sizeof(glm.float32), ctypes.c_void_p(3*glm.sizeof(glm.float32)))
+    glEnableVertexAttribArray(1)
 
     return VAO
 
 def prepare_vao_frame():
     # prepare vertex data (in main memory)
     vertices = glm.array(glm.float32,
-        # position # color
-         0, 0, 0,  1, 0, 0, # x-axis start
-         1, 0, 0,  1, 0, 0, # x-axis end 
-         0, 0, 0,  0, 1, 0, # y-axis start
-         0, 1, 0,  0, 1, 0, # y-axis end 
-         0, 0, 0,  0, 0, 1, # z-axis start
-         0, 0, 1,  0, 0, 1, # z-axis end 
+        # position        # color
+         0.0, 0.0, 0.0,  1.0, 0.0, 0.0, # x-axis start
+         1.0, 0.0, 0.0,  1.0, 0.0, 0.0, # x-axis end 
+         0.0, 0.0, 0.0,  0.0, 1.0, 0.0, # y-axis start
+         0.0, 1.0, 0.0,  0.0, 1.0, 0.0, # y-axis end 
+         0.0, 0.0, 0.0,  0.0, 0.0, 1.0, # z-axis start
+         0.0, 0.0, 1.0,  0.0, 0.0, 1.0, # z-axis end 
     )
 
     # create and activate VAO (vertex array object)
@@ -227,15 +198,20 @@ def draw_frame(vao, MVP, MVP_loc):
     glUniformMatrix4fv(MVP_loc, 1, GL_FALSE, glm.value_ptr(MVP))
     glDrawArrays(GL_LINES, 0, 6)
 
-def draw_node(vao, node, VP, MVP_loc, color_loc):
-    MVP = VP * node.get_global_transform() * node.get_shape_transform()
-    color = node.get_color()
-
+def draw_cube(vao, MVP, MVP_loc):
     glBindVertexArray(vao)
     glUniformMatrix4fv(MVP_loc, 1, GL_FALSE, glm.value_ptr(MVP))
-    glUniform3f(color_loc, color.r, color.g, color.b)
-    glDrawArrays(GL_TRIANGLES, 0, 6)
+    # glDrawArrays(GL_TRIANGLES, 0, 36)
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, None)
 
+def draw_cube_array(vao, MVP, MVP_loc):
+    glBindVertexArray(vao)
+    for i in range(5):
+        for j in range(5):
+            for k in range(5):
+                MVP_cube = MVP * glm.translate(glm.vec3(1*i, 1*j, 1*k)) * glm.scale(glm.vec3(.5,.5,.5))
+                glUniformMatrix4fv(MVP_loc, 1, GL_FALSE, glm.value_ptr(MVP_cube))
+                glDrawArrays(GL_TRIANGLES, 0, 36)
 
 def main():
     # initialize glfw
@@ -247,7 +223,7 @@ def main():
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE) # for macOS
 
     # create a window and OpenGL context
-    window = glfwCreateWindow(800, 800, '2022055741', None, None)
+    window = glfwCreateWindow(800, 800, '3-cube-indexed', None, None)
     if not window:
         glfwTerminate()
         return
@@ -257,22 +233,14 @@ def main():
     glfwSetKeyCallback(window, key_callback);
 
     # load shaders
-    shader_for_frame = load_shaders(g_vertex_shader_src_color_attribute, g_fragment_shader_src)
-    shader_for_box = load_shaders(g_vertex_shader_src_color_uniform, g_fragment_shader_src)
+    shader_program = load_shaders(g_vertex_shader_src, g_fragment_shader_src)
 
     # get uniform locations
-    MVP_loc_frame = glGetUniformLocation(shader_for_frame, 'MVP')
-    MVP_loc_box = glGetUniformLocation(shader_for_box, 'MVP')
-    color_loc_box = glGetUniformLocation(shader_for_box, 'color')
+    MVP_loc = glGetUniformLocation(shader_program, 'MVP')
     
     # prepare vaos
-    vao_box = prepare_vao_box()
+    vao_cube = prepare_vao_cube()
     vao_frame = prepare_vao_frame()
-
-    # create a hirarchical model - Node(parent, shape_transform, color)
-    base = Node(None, glm.scale((.2,.2,0.)), glm.vec3(0,0,1))
-    arm = Node(base, glm.translate((.25,0,.01)) * glm.scale((.25,.1,0.)), glm.vec3(1,0,0)) #changed translation here.
-    second_arm = Node(arm, glm.translate((.25,0,.02)) * glm.scale((.25,.1,0.)), glm.vec3(0,1,0)) #additional arm.
 
     # loop until the user closes the window
     while not glfwWindowShouldClose(window):
@@ -280,31 +248,46 @@ def main():
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glEnable(GL_DEPTH_TEST)
 
+        # render in "wireframe mode"
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+
+        glUseProgram(shader_program)
+
         # projection matrix
-        P = glm.ortho(-1,1,-1,1,-10,10)
+        # perspective projection - try changing arguments
+
+        # perspective 
+        P = glm.perspective(45, 1, 1, 10)
+
+        # # frustum
+        # # P = glm.frustum(-1,1, -1,1, .1,10)
+        # P = glm.frustum(-1,1, -1,1, 1,10)
 
         # view matrix
-        V = glm.lookAt(glm.vec3(1*np.sin(g_cam_ang),g_cam_height,1*np.cos(g_cam_ang)), glm.vec3(0,0,0), glm.vec3(0,1,0))
+        # rotate camera position with g_cam_ang / move camera up & down with g_cam_height
+        V = glm.lookAt(glm.vec3(5*np.sin(g_cam_ang),g_cam_height,5*np.cos(g_cam_ang)), glm.vec3(0,0,0), glm.vec3(0,1,0))
 
         # draw world frame
-        glUseProgram(shader_for_frame)
-        draw_frame(vao_frame, P*V*glm.mat4(), MVP_loc_frame)
+        draw_frame(vao_frame, P*V*glm.mat4(), MVP_loc)
 
 
+        # animating
         t = glfwGetTime()
 
-        # set local transformations of each node
-        base.set_transform(glm.translate((glm.sin(t),0,0)))
-        arm.set_transform(glm.rotate(t, (0,0,1)))
-        second_arm.set_transform(glm.translate((.5, 0, 0)) * glm.rotate(t, (0,0,1)))
-        # recursively update global transformations of all nodes
-        base.update_tree_global_transform()
+        # rotation
+        th = np.radians(t*90)
+        R = glm.rotate(th, glm.vec3(1,0,0))
 
-        # draw nodes
-        glUseProgram(shader_for_box)
-        draw_node(vao_box, base, P*V, MVP_loc_box, color_loc_box)
-        draw_node(vao_box, arm, P*V, MVP_loc_box, color_loc_box)
-        draw_node(vao_box, second_arm, P*V, MVP_loc_box, color_loc_box)
+        M = glm.mat4()
+
+        # # try applying rotation
+        # M = R
+
+        # draw cube w.r.t. the current frame MVP
+        draw_cube(vao_cube, P*V*M, MVP_loc)
+
+        # # draw cube array w.r.t. the current frame MVP
+        # draw_cube_array(vao_cube, P*V*M, MVP_loc)
 
 
         # swap front and back buffers

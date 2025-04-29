@@ -247,7 +247,7 @@ def main():
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE) # for macOS
 
     # create a window and OpenGL context
-    window = glfwCreateWindow(800, 800, '2022055741', None, None)
+    window = glfwCreateWindow(800, 800, '1-hierarchical', None, None)
     if not window:
         glfwTerminate()
         return
@@ -271,8 +271,7 @@ def main():
 
     # create a hirarchical model - Node(parent, shape_transform, color)
     base = Node(None, glm.scale((.2,.2,0.)), glm.vec3(0,0,1))
-    arm = Node(base, glm.translate((.25,0,.01)) * glm.scale((.25,.1,0.)), glm.vec3(1,0,0)) #changed translation here.
-    second_arm = Node(arm, glm.translate((.25,0,.02)) * glm.scale((.25,.1,0.)), glm.vec3(0,1,0)) #additional arm.
+    arm = Node(base, glm.translate((.5,0,.01)) * glm.scale((.5,.1,0.)), glm.vec3(1,0,0))
 
     # loop until the user closes the window
     while not glfwWindowShouldClose(window):
@@ -295,8 +294,8 @@ def main():
 
         # set local transformations of each node
         base.set_transform(glm.translate((glm.sin(t),0,0)))
-        arm.set_transform(glm.rotate(t, (0,0,1)))
-        second_arm.set_transform(glm.translate((.5, 0, 0)) * glm.rotate(t, (0,0,1)))
+        arm.set_transform(glm.translate((.2, 0, 0)) * glm.rotate(t, (0,0,1)))
+
         # recursively update global transformations of all nodes
         base.update_tree_global_transform()
 
@@ -304,7 +303,6 @@ def main():
         glUseProgram(shader_for_box)
         draw_node(vao_box, base, P*V, MVP_loc_box, color_loc_box)
         draw_node(vao_box, arm, P*V, MVP_loc_box, color_loc_box)
-        draw_node(vao_box, second_arm, P*V, MVP_loc_box, color_loc_box)
 
 
         # swap front and back buffers
