@@ -269,7 +269,7 @@ def main():
         M = glm.mat4()
 
         # # try applying rotation
-        # M = R
+        #M = R
 
         # update uniforms
         MVP = P*V*M

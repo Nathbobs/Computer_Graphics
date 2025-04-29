@@ -40,6 +40,8 @@ out vec4 FragColor;
 
 uniform vec3 view_pos;
 
+// you can hange the values below to see the effect
+
 void main()
 {
     // light and material properties
