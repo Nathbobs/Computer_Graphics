@@ -39,13 +39,14 @@ in vec3 vout_normal;  // interpolated normal
 out vec4 FragColor;
 
 uniform vec3 view_pos;
+uniform vec3 light_pos;
 
-// you can hange the values below to see the effect
+// you can change the values below to see the effect
 
 void main()
 {
     // light and material properties
-    vec3 light_pos = vec3(2,2,0); // changed light source position to (2,2,0)
+    // vec3 light_pos = vec3(2,2,0); // changed light source position to (2,2,0)
     vec3 light_color = vec3(1,1,1);
     vec3 material_color = vec3(1,0,0);
     float material_shininess = 32.0;
@@ -243,6 +244,7 @@ def main():
     loc_MVP = glGetUniformLocation(shader_program, 'MVP')
     loc_M = glGetUniformLocation(shader_program, 'M')
     loc_view_pos = glGetUniformLocation(shader_program, 'view_pos')
+    loc_light_pos = glGetUniformLocation(shader_program, 'light_pos')
 
     # prepare vaos
     vao_cube = prepare_vao_cube()
@@ -272,6 +274,8 @@ def main():
 
         # # try applying rotation
         # M = R
+        #light position
+        light_pos = glm.vec3(2*np.cos(t), 2, -2*np.sin(t))
 
         # update uniforms
         MVP = P*V*M
@@ -279,6 +283,7 @@ def main():
         glUniformMatrix4fv(loc_MVP, 1, GL_FALSE, glm.value_ptr(MVP))
         glUniformMatrix4fv(loc_M, 1, GL_FALSE, glm.value_ptr(M))
         glUniform3f(loc_view_pos, view_pos.x, view_pos.y, view_pos.z)
+        glUniform3f(loc_light_pos, light_pos.x, light_pos.y, light_pos.z)
 
         # draw cube w.r.t. the current frame MVP
         glBindVertexArray(vao_cube)
